@@ -14,27 +14,29 @@ def extract_item_from_url(url, current_deep):
     items = []
     page = requests.get(url)
     tree = html.fromstring(page.content)
-    sections = tree.xpath('//section[@class="item_infos"]')
+    sections = tree.xpath('//a[@class="list_item clearfix trackable"]')
     for section in sections:
-        price = map(lb_clean_price, section.xpath('h3[@class="item_price"]/text()'))
-        name = map(lb_clean_text, section.xpath('h2[@class="item_title"]/text()'))
-        city = map(lb_clean_text, section.xpath('p/meta[@itemprop="address"]/@content'))
+        href=section.xpath('@href')
+        price = map(lb_clean_price, section.xpath('section/h3[@class="item_price"]/text()'))
+        name = map(lb_clean_text, section.xpath('section/h2[@class="item_title"]/text()'))
+        city = map(lb_clean_text, section.xpath('section/p/meta[@itemprop="address"]/@content'))
         depatement = (city[1] if len(city) >1 else '')
-        if price and name and city:
+        if price and name and city and href:
             item = {
             'price':price[0],
             'name':name[0],
             'city':city[0],
-            'depatement':depatement
+            'depatement':depatement,
+            'href':'%s%s' % ("http:",href[0])
             }
             items.append(item)
-        next_link = tree.xpath('//a[@id="next"]/@href')
+    next_link = tree.xpath('//a[@id="next"]/@href')
 
     #Look for the next page
     if next_link:
         next_url = '%s%s' % ("http:",next_link[0])
         print next_url
-        if current_deep > 0:
+        if current_deep > 1:
             items = items + extract_item_from_url(next_url, current_deep - 1)
     return items
 
@@ -46,5 +48,5 @@ def get_lbc_items(base_url, max_deep, output_file):
     file_ouput = open(output_file, "w")
     file_ouput.write(json.dumps(items, indent=4, separators=(',', ': ')))
 
-get_lbc_items("https://www.leboncoin.fr/ventes_immobilieres/offres/ile_de_france/?th=1&ps=1&pe=3&sqs=1&sqe=9&ret=1&ret=2", 2,"./output-buy-price.json")
-get_lbc_items("https://www.leboncoin.fr/locations/offres/ile_de_france/?th=1&sqs=1&sqe=8&ret=1&ret=2", 3,"./output-rent-price.json")
+get_lbc_items("https://www.leboncoin.fr/ventes_immobilieres/offres/ile_de_france/?th=1&ps=1&pe=3&sqs=1&sqe=9&ret=1&ret=2", 1,"./output-buy-price.json")
+get_lbc_items("https://www.leboncoin.fr/locations/offres/ile_de_france/?th=1&sqs=1&sqe=8&ret=1&ret=2", 1,"./output-rent-price.json")
