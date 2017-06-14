@@ -9,8 +9,9 @@ lb_clean_text = lambda x: x.strip().encode("ascii", "ignore")
 
 
 
-items = []
+
 def extract_item_from_url(url, current_deep):
+    items = []
     page = requests.get(url)
     tree = html.fromstring(page.content)
     sections = tree.xpath('//section[@class="item_infos"]')
@@ -34,21 +35,16 @@ def extract_item_from_url(url, current_deep):
         next_url = '%s%s' % ("http:",next_link[0])
         print next_url
         if current_deep > 0:
-            extract_item_from_url(next_url, current_deep - 1)
+            items = items + extract_item_from_url(next_url, current_deep - 1)
+    return items
 
 
 
 
+def get_lbc_items(base_url, max_deep, output_file):
+    items = extract_item_from_url(base_url, max_deep)
+    file_ouput = open(output_file, "w")
+    file_ouput.write(json.dumps(items, indent=4, separators=(',', ': ')))
 
-#Get buy prices
-base_url = "https://www.leboncoin.fr/ventes_immobilieres/offres/ile_de_france/?th=1&ps=1&pe=3&sqs=1&sqe=9&ret=1&ret=2"
-extract_item_from_url(base_url, 20)
-file_ouput = open("./output-buy-price.json", "w")
-file_ouput.write(json.dumps(items, indent=4, separators=(',', ': ')))
-
-#Get rent prices
-items = []
-base_url = "https://www.leboncoin.fr/locations/offres/ile_de_france/?th=1&sqs=1&sqe=8&ret=1&ret=2"
-extract_item_from_url(base_url, 30)
-file_ouput = open("./output-rent-price.json", "w")
-file_ouput.write(json.dumps(items, indent=4, separators=(',', ': ')))
+get_lbc_items("https://www.leboncoin.fr/ventes_immobilieres/offres/ile_de_france/?th=1&ps=1&pe=3&sqs=1&sqe=9&ret=1&ret=2", 2,"./output-buy-price.json")
+get_lbc_items("https://www.leboncoin.fr/locations/offres/ile_de_france/?th=1&sqs=1&sqe=8&ret=1&ret=2", 3,"./output-rent-price.json")
