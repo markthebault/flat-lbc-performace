@@ -14,35 +14,37 @@ lb_clean_text = lambda x: x.strip().encode("ascii", "ignore")
 items_to_save = ['Surface', 'GES', 'Pices', 'Classe nergie', 'Type de bien']
 def extract_item_detail(url):
     print ("-----"+url)
+    dic = {}
     page = requests.get(url)
     tree = html.fromstring(page.content)
-    section = tree.xpath('//section[@class="properties lineNegative"]')[0]
+    section = tree.xpath('//section[@class="properties lineNegative"]')
+    if section:
+        section = section[0]
+        #get the table detail
+        detail = section.xpath('div[@class="line properties_description"]/p[@itemprop="description"]/text()')
+        detail = (lb_clean_text(detail[0]) if detail else "")
+        properties = section.xpath('div/h2[@class="clearfix"]')
 
-    #get the table detail
-    detail = section.xpath('div[@class="line properties_description"]/p[@itemprop="description"]/text()')
-    detail = (lb_clean_text(detail[0]) if detail else "")
-    properties = section.xpath('div/h2[@class="clearfix"]')
-    dic = {}
 
-    #Get all item properties
-    for prop in properties:
-        cat = prop.xpath('span[@class="property"]/text()')
-        val = prop.xpath('span[@class="value"]/text()')
+        #Get all item properties
+        for prop in properties:
+            cat = prop.xpath('span[@class="property"]/text()')
+            val = prop.xpath('span[@class="value"]/text()')
 
-        cat = (lb_clean_text(cat[0]) if cat else "")
-        val = (lb_clean_text(val[0]) if val else "")
-        if(cat in items_to_save):
+            cat = (lb_clean_text(cat[0]) if cat else "")
+            val = (lb_clean_text(val[0]) if val else "")
+            if(cat in items_to_save):
 
-            #Get energie clas stored in a <a> link
-            if(cat in ['GES', 'Classe nergie']):
-                val = prop.xpath('span/a[@class="popin-open"]/text()')
-                val = (val[0][0] if val else "")
+                #Get energie clas stored in a <a> link
+                if(cat in ['GES', 'Classe nergie']):
+                    val = prop.xpath('span/a[@class="popin-open"]/text()')
+                    val = (val[0][0] if val else "")
 
-            #add all key/values in dictionnary
-            dic[cat] = val
+                #add all key/values in dictionnary
+                dic[cat] = val
 
-    #store description in the dictionnary
-    dic['description'] = detail
+        #store description in the dictionnary
+        dic['description'] = detail
     return dic
 
 def extract_item_from_url(url, current_deep):
@@ -67,9 +69,9 @@ def extract_item_from_url(url, current_deep):
             'city':city[0],
             'date':date[0],
             'depatement':depatement,
-            'href':href,
-            'detail':item_detail
+            'href':href
             }
+            item.update(item_detail)
             items.append(item)
     next_link = tree.xpath('//a[@id="next"]/@href')
 
