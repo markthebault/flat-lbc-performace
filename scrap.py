@@ -5,6 +5,8 @@ import json
 
 
 lb_clean_price = lambda x : re.sub("[^0-9]", "", x)
+
+#TODO transform accents to non accents characters
 lb_clean_text = lambda x: x.strip().encode("ascii", "ignore")
 
 #This variable contains the values in the parge of the item that we want to save
